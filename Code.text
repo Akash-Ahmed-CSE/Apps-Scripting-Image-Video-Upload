@@ -1,0 +1,33 @@
+const FOLDER_ID = 'Google_Folder_ID';
+
+function onOpen() {
+  SpreadsheetApp.getUi()
+    .createMenu('Image Upload')
+    .addItem('Upload Image', 'openUploadDialog')
+    .addToUi();
+}
+
+function openUploadDialog() {
+  const html = HtmlService.createHtmlOutputFromFile('Upload')
+    .setWidth(420)
+    .setHeight(300);
+  SpreadsheetApp.getUi().showModalDialog(html, 'Upload Image');
+}
+
+function uploadImage(data) {
+  const folder = DriveApp.getFolderById(FOLDER_ID);
+
+  // Decode image
+  const bytes = Utilities.base64Decode(data.fileData.split(',')[1]);
+  const blob = Utilities.newBlob(bytes, data.mimeType, data.fileName);
+
+  // Save to Drive
+  const file = folder.createFile(blob);
+  file.setSharing(
+    DriveApp.Access.ANYONE_WITH_LINK,
+    DriveApp.Permission.VIEW
+  );
+
+  // Return URL ONLY (do not touch sheet)
+  return file.getUrl();
+}

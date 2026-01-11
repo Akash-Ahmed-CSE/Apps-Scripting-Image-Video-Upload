@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <style>
+      body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background-color: #f4f6f8;
+        margin: 0;
+        padding: 0;
+      }
+
+      .card {
+        background: white;
+        max-width: 400px;
+        margin: 40px auto;
+        padding: 25px;
+        border-radius: 12px;
+        box-shadow: 0 6px 15px rgba(0,0,0,0.1);
+        text-align: center;
+      }
+
+      h3 {
+        margin-top: 0;
+        color: #333;
+      }
+
+      input[type="file"] {
+        padding: 6px;
+        border-radius: 6px;
+        border: 1px solid #ccc;
+        width: 90%;
+      }
+
+      button {
+        background-color: #4285f4;
+        color: white;
+        border: none;
+        padding: 10px 18px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 14px;
+        transition: background 0.3s;
+        margin-top: 12px;
+      }
+
+      button:hover {
+        background-color: #3367d6;
+      }
+
+      button:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+
+      #loader {
+        display: none;
+        margin: 15px auto;
+      }
+
+      .spinner {
+        width: 35px;
+        height: 35px;
+        border: 5px solid #ddd;
+        border-top: 5px solid #4285f4;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: auto;
+      }
+
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+
+      .copy-container {
+        display: none; /* Hidden initially */
+        margin-top: 15px;
+        justify-content: center;
+        align-items: center;
+      }
+
+      .copy-container input[type="text"] {
+        width: 70%;
+        padding: 6px 10px;
+        border-radius: 6px;
+        border: 1px solid #ccc;
+        font-size: 13px;
+      }
+
+      .copy-btn {
+        cursor: pointer;
+        font-size: 18px;
+        margin-left: 10px;
+        background-color: #f1f3f4;
+        border: none;
+        border-radius: 6px;
+        padding: 6px 10px;
+        transition: background 0.3s;
+      }
+
+      .copy-btn:hover {
+        background-color: #e0e0e0;
+      }
+
+      #status {
+        margin-top: 15px;
+        font-size: 14px;
+      }
+
+      .status-success {
+        color: #28a745;
+      }
+
+      .status-error {
+        color: #dc3545;
+      }
+
+      .status-info {
+        color: #333;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="card">
+      <h3>Upload Image</h3>
+
+      <input type="file" id="file" accept="image/*" />
+      <br>
+
+      <button id="uploadBtn" onclick="upload()">Upload</button>
+
+      <!-- Loader -->
+      <div id="loader">
+        <div class="spinner"></div>
+        <p style="text-align:center;" class="status-info">Uploading image…</p>
+      </div>
+
+      <!-- Copy section hidden by default -->
+      <div class="copy-container" id="copyContainer">
+        <input type="text" id="imageUrl" readonly placeholder="Link will appear here" />
+        <button class="copy-btn" title="Copy link" onclick="copyLink()">📋</button>
+      </div>
+
+      <p id="status"></p>
+    </div>
+
+    <script>
+      function upload() {
+        const fileInput = document.getElementById('file');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const loader = document.getElementById('loader');
+        const status = document.getElementById('status');
+        const copyContainer = document.getElementById('copyContainer');
+        const imageUrlInput = document.getElementById('imageUrl');
+
+        const file = fileInput.files[0];
+        if (!file) {
+          alert('Please select an image');
+          return;
+        }
+
+        // Show loader, hide copy section
+        uploadBtn.disabled = true;
+        loader.style.display = 'block';
+        status.innerText = '';
+        status.className = '';
+        copyContainer.style.display = 'none';
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          google.script.run
+            .withSuccessHandler(url => {
+              loader.style.display = 'none';
+              uploadBtn.disabled = false;
+
+              // Show copy section only after successful upload
+              imageUrlInput.value = url;
+              copyContainer.style.display = 'flex';
+              status.innerText = 'Upload successful!';
+              status.className = 'status-success';
+              fileInput.value = '';
+            })
+            .withFailureHandler(() => {
+              loader.style.display = 'none';
+              uploadBtn.disabled = false;
+              status.innerText = 'Upload failed. Please try again.';
+              status.className = 'status-error';
+            })
+            .uploadImage({
+              fileName: file.name,
+              mimeType: file.type,
+              fileData: e.target.result
+            });
+        };
+
+        reader.readAsDataURL(file);
+      }
+
+      function copyLink() {
+        const input = document.getElementById('imageUrl');
+        navigator.clipboard.writeText(input.value).then(() => {
+          const status = document.getElementById('status');
+          status.innerText = 'Link copied to clipboard!';
+          status.className = 'status-success';
+        });
+      }
+    </script>
+  </body>
+</html>
